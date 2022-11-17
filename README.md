@@ -2,6 +2,10 @@
 
 Rec-on-go is a python baseline recon tool based in some go tools.
 
+## Install
+
+Just run the `installer.sh` bash file.
+
 ## Modes:
 ### Passive: 
 In passive mode run the following tools to get subdomains:
