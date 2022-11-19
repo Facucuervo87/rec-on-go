@@ -24,7 +24,7 @@ parser.add_argument('-d', '--domain', help='Target domain')
 parser.add_argument('-i', '--input', help="Target's input file")
 parser.add_argument('-p', '--project', help='Project name', required=True)
 parser.add_argument('-nc', '--nuclei', help='Nuclei connector file .yaml')
-parser.add_argument('-s', '--scan', help='Scan mode must be passive or active.')
+parser.add_argument('-s', '--scan', help='Scan mode must be passive or active.', required=True)
 
 args = parser.parse_args()
 
@@ -52,7 +52,7 @@ try:
     os.mkdir(path)
     os.mkdir(subd_path)
     os.mkdir(screenshot_path)
-    os.mkdir(katana_path)
+    
 
 except OSError as e:
     if e.errno != errno.EEXIST:
@@ -118,7 +118,7 @@ def naabu_active(unique_file):
 def httpx_passive_url():
     print("------------------------------------------------------")
     print("Getting URLs with httpx") 
-    output_httpx = path + domain + 'urls.txt'
+    output_httpx = path + domain + '_urls.txt'
     naabu_results = path + 'recon-passive.txt'
     httpx_run = subprocess.run(f"httpx -list {naabu_results} -o {output_httpx}", shell=True)
     print("Sending URL's to discord")
@@ -128,7 +128,7 @@ def httpx_passive_url():
 def httpx_active_url():
     print("------------------------------------------------------")
     print("Getting URLs with httpx") 
-    output_httpx = path + domain + 'urls.txt'
+    output_httpx = path + domain + '_urls.txt'
     naabu_results = path + 'recon-active.txt'
     httpx_run = subprocess.run(f"httpx -list {naabu_results} -o {output_httpx}", shell=True)
     print("Sending URL's to discord")
@@ -138,7 +138,7 @@ def httpx_active_url():
 def screenshot():
     print("------------------------------------------------------")
     print("Tacking Screenshots with gowitness")
-    output_httpx = path + domain + 'urls.txt'
+    output_httpx = path + domain + '_urls.txt'
     with open(output_httpx, 'r') as file:
         for url in file:
             gowitness = subprocess.run(f"gowitness --disable-db single -P {screenshot_path} {url}", shell=True)
@@ -146,7 +146,12 @@ def screenshot():
 def katana():  
     print("------------------------------------------------------")
     print("Running katana against URL")
-    output_httpx = path + 'urls.txt' 
+    try:
+        os.mkdir(katana_path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    output_httpx = path + domain + '_urls.txt'
     count = 0
     with open(output_httpx,'r') as file:
         for line in file:
@@ -161,14 +166,11 @@ def katana():
 
 def nucleiscan():
     print("Starting Nuclei scan against URL's")
-    output_httpx = path + 'urls.txt'
+    output_httpx = path + domain + '_urls.txt'
     output_nuclei = path + 'nuclei_scan'
         
     if nuclei_config == None:
         print("Scanning nuclei default")
-        output_httpx = path + 'urls.txt'
-        subd_file = domain + '-subd-port_scan'
-        url_file = path + domain + '-url_scan'
         nuclei = subprocess.run(f"nuclei -l {output_httpx} --silent -o {output_nuclei}", shell=True)
         print(f"Sending scan's results against {domain} to discord")
         nuclei1_notify = subprocess.run(f"notify --silent -data {output_nuclei} -id scan", shell=True)
@@ -176,8 +178,6 @@ def nucleiscan():
     else:
         config_file = cwd + '/' + nuclei_config
         print(f"Scanning and sending results to connector ussing {config_file}")
-        subd_file = domain + '-subdomain_scan'
-        url_file = domain + '-url_scan'
         nuclei = subprocess.run(f"nuclei -l {output_httpx} -o {output_nuclei} -rc {config_file}", shell=True)
         print(f"Sending scan's results against {domain} to discord")
         nuclei1_notify = subprocess.run(f"notify --silent -data {output_nuclei} -id scan", shell=True)
